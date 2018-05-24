@@ -2,6 +2,8 @@ package yann.serversocketdemo;
 
 import android.util.Log;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,13 +21,10 @@ import java.util.concurrent.Executors;
 
 public class ServerSocketPoolTest {
 
-    public MainActivity.MyHandler handler;
-
     public ServerSocketPoolTest() {
     }
 
-    public void testCommon(MainActivity.MyHandler myHandler) {
-        this.handler = myHandler;
+    public void testCommon() {
         ServerSocket serverSocket = null;
         //定义一个容量为50的线程
         ExecutorService service = Executors.newFixedThreadPool(50);
@@ -37,7 +36,7 @@ public class ServerSocketPoolTest {
                 Socket connection = null;
                 //接收客户端传过来的数据，会阻塞
                 connection = serverSocket.accept();
-                service.submit(new SubPolThread(connection, myHandler));
+                service.submit(new SubPolThread(connection));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,15 +54,9 @@ public class ServerSocketPoolTest {
 
 class SubPolThread implements Callable<Boolean> {
     private Socket connection;
-    private MainActivity.MyHandler myHandler;
 
-    public SubPolThread(Socket conSocket) {
-        this.connection = conSocket;
-    }
-
-    public SubPolThread(Socket connection, MainActivity.MyHandler myHandler) {
+    public SubPolThread(Socket connection) {
         this.connection = connection;
-        this.myHandler = myHandler;
     }
 
     /**
@@ -86,8 +79,8 @@ class SubPolThread implements Callable<Boolean> {
                     str += TypeUtil.byte2Int(DataStruct.getTempBytes()[i]) + " ";
                 }
             }
-            Log.d("接收的数据","" + str);
-
+            Log.d("接收的数据", "" + str);
+            EventBus.getDefault().post(new MessageEvent("接收的数据" + str, realBytes));
             dataStruct.parsePackage(realBytes);
 
             DataStruct.clearTempBytes();
